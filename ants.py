@@ -68,9 +68,10 @@ class Place(object):
         else:
             assert self.ant == insect, '{0} is not in {1}'.format(insect, self)
             "*** YOUR CODE HERE ***"  # Q9
-            if self.ant.is_truequeen is not None:
-                if self.ant.is_truequeen:
-                    return
+            if self.ant.is_truequeen and self.ant.is_truequeen:
+                return
+            if self.ant.name == 'Bodyguard' and self.ant.ant and self.ant.ant.is_truequeen:
+                return
             self.ant = None
 
         insect.place = None
@@ -156,7 +157,7 @@ class Bee(Insect):
 class Ant(Insect):
     """An Ant occupies a place and does work for the colony."""
 
-    implemented = False  # Only implemented Ant classes should be instantiated
+    implemented = True  # Only implemented Ant classes should be instantiated
     damage = 0
     food_cost = 0
     blocks_path = True  # Q A7
@@ -219,7 +220,6 @@ class ThrowerAnt(Ant):
         Problem B5: This method returns None if there is no Bee in range.
         """
         "*** YOUR CODE HERE ***"
-        #---我先写了做测试用，你改成你的 if you want...
         beeplace = self.place
         distance = 0
         while beeplace is not hive:
@@ -623,14 +623,14 @@ class BodyguardAnt(Ant):
         if self.armor <= amount:
             original_place, remained_ant = self.place, self.ant
             Insect.reduce_armor(self, amount)
-            if self.ant is not None:
+            if self.ant:
                 original_place.ant = remained_ant
         else:
             Insect.reduce_armor(self, amount)
 
     def action(self, colony):
         "*** YOUR CODE HERE ***"
-        if self.ant is not None:
+        if self.ant:
             self.ant.action(colony)
 
 
@@ -639,7 +639,7 @@ class QueenAnt(ThrowerAnt):
 
     name = 'Queen'
     "*** YOUR CODE HERE ***"
-    implemented = False
+    implemented = True
     food_cost = 2
     watersafe = True
     count = 0
@@ -665,9 +665,11 @@ class QueenAnt(ThrowerAnt):
 
         behind_place = self.place.exit
 
-        while behind_place is not None:
-            if behind_place.ant is not None:
+        while behind_place:
+            if behind_place.ant:
                 if not behind_place.ant.if_doubledamage:
+                    if behind_place.ant.name == 'Bodyguard' and behind_place.ant.ant:
+                            behind_place.ant.ant.damage *= 2
                     behind_place.ant.damage *= 2
                     behind_place.ant.if_doubledamage = True
             behind_place = behind_place.exit
@@ -682,7 +684,7 @@ class QueenPlace(object):  # Q9
 
     @property
     def bees(self):
-        return  self.queen.bees + self.place.bees
+        return self.queen.bees + self.place.bees
 
 
 class AntRemover(Ant):
