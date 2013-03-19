@@ -506,6 +506,7 @@ class FireAnt(Ant):
             copied_bees = self.place.bees[:]
             for bee in copied_bees:
                 bee.reduce_armor(self.damage)
+            self.place.remove_insect(self)
 
 
 class LongThrower(ThrowerAnt):
