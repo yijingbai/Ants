@@ -48,7 +48,7 @@ class Place(object):
         if insect.is_ant():
             # Phase 2: Special handling for BodyguardAnt #Q8
             "*** YOUR CODE HERE ***"
-            if self.ant is not None:
+            if self.ant:
                 assert self.ant.can_contain(insect) or insect.can_contain(self.ant), 'Two ants in {0}'.format(self)
                 if self.ant.can_contain(insect):
                     self.ant.contain_ant(insect)
@@ -137,7 +137,7 @@ class Bee(Insect):
         """Return True if this Bee cannot advance to the next Place."""
         # Phase 2: Special handling for NinjaAnt
         "*** YOUR CODE HERE ***"
-        if self.place.ant is not None:
+        if self.place.ant:
             return self.place.ant.blocks_path
         return False
 
@@ -233,7 +233,7 @@ class ThrowerAnt(Ant):
 
     def throw_at(self, target):
         """Throw a leaf at the target Bee, reducing its armor."""
-        if target is not None:
+        if target:
             target.reduce_armor(self.damage)
 
     def action(self, colony):
@@ -338,12 +338,12 @@ class AntColony(object):
     def remove_ant(self, place_name):
         """Remove an Ant from the Colony."""
         place = self.places[place_name]
-        if place.ant is not None:
+        if place.ant:
             place.remove_insect(place.ant)
 
     @property
     def ants(self):
-        return [p.ant for p in self.places.values() if p.ant is not None]
+        return [p.ant for p in self.places.values() if p.ant]
 
     @property
     def bees(self):
@@ -701,6 +701,13 @@ class AntRemover(Ant):
 ##################
 # Status Effects #
 ##################
+def curry(fn):
+    def outer(x):
+        def inner(*args):
+            return fn(x, *args)
+        return inner
+    return outer
+
 
 def make_slow(action):
     """Return a new action method that calls action every other turn.
@@ -708,6 +715,10 @@ def make_slow(action):
     action -- An action method of some Bee
     """
     "*** YOUR CODE HERE ***"
+    def slow_action(self, colony):
+        if colony.time % 2 == 0:
+            action(self, colony)
+    return slow_action
 
 
 def make_stun(action):
@@ -715,12 +726,22 @@ def make_stun(action):
 
     action -- An action method of some Bee
     """
-    "*** YOUR CODE HERE ***"
+    def nothing_action(self, colony):
+        return
+    return nothing_action
 
 
 def apply_effect(effect, bee, duration):
     """Apply a status effect to a Bee that lasts for duration turns."""
     "*** YOUR CODE HERE ***"
+    bee.action = effect(bee.action)
+    action_stack = []
+    start_time = colony.time
+    if colony.time - start_time < duration:
+        action_stack.append(effect(bee.action))
+    else:
+        action_stack.append(bee.action)
+    bee.action = action_stack.pop()
 
 
 class SlowThrower(ThrowerAnt):
@@ -728,7 +749,17 @@ class SlowThrower(ThrowerAnt):
 
     name = 'Slow'
     "*** YOUR CODE HERE ***"
-    implemented = False
+    implemented = True
+    damage = 0
+
+    def throw_at(self, target):
+        """Throw a leaf at the target Bee, reducing its armor."""
+        if target:
+            apply_effect(make_slow, target, 3)
+
+    def action(self, colony):
+        self.throw_at(self.nearest_bee(colony.hive))
+
 
 
 class StunThrower(ThrowerAnt):
@@ -736,7 +767,9 @@ class StunThrower(ThrowerAnt):
 
     name = 'Stun'
     "*** YOUR CODE HERE ***"
-    implemented = False
+    implemented = True
+    food_cost = 6
+    damage = 0
 
     def throw_at(self, target):
         if target:
